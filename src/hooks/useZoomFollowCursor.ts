@@ -28,6 +28,7 @@ interface ZoomTarget {
 interface UseZoomFollowCursorOptions {
   onZoomChange?: (zoom: ZoomTarget) => void
   pollingInterval?: number
+  safeZoneSensitivity?: number // Normalized 0-1, how much cursor must move to exit safe zone
 }
 
 interface UseZoomFollowCursorReturn {
@@ -55,6 +56,13 @@ const DEFAULT_ZOOM_TARGET: ZoomTarget = {
   y: 0.5,
   scale: 1.0
 }
+
+/**
+ * Default safe zone sensitivity (5% of screen).
+ * Cursor must move more than this distance from the safe zone center
+ * to resume tracking and prevent jittery movement.
+ */
+const DEFAULT_SAFE_ZONE_SENSITIVITY = 0.05
 
 /**
  * Linear interpolation helper
@@ -86,7 +94,11 @@ function clamp(value: number, min: number, max: number): number {
 export function useZoomFollowCursor(
   options: UseZoomFollowCursorOptions = {}
 ): UseZoomFollowCursorReturn {
-  const { onZoomChange, pollingInterval = 16 } = options // ~60fps
+  const { 
+    onZoomChange, 
+    pollingInterval = 16,
+    safeZoneSensitivity = DEFAULT_SAFE_ZONE_SENSITIVITY 
+  } = options // ~60fps
 
   const [zoomState, setZoomState] = useState<ZoomFollowState>(DEFAULT_ZOOM_STATE)
   const [currentZoom, setCurrentZoom] = useState<ZoomTarget>(DEFAULT_ZOOM_TARGET)
@@ -105,7 +117,6 @@ export function useZoomFollowCursor(
 
   // Safe zone to prevent jittery movement when cursor is near center
   const safeZoneRef = useRef<{ x: number; y: number } | null>(null)
-  const safeZoneSensitivity = 0.05 // 5% of screen
 
   /**
    * Get current cursor position from Electron

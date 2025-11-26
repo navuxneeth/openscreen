@@ -30,6 +30,13 @@ const DEFAULT_OPTIONS: Required<GenerateZoomOptions> = {
 }
 
 /**
+ * Threshold for detecting stationary cursor movement (normalized distance per ms).
+ * This value represents very slow movement - approximately 0.005% of screen width per ms,
+ * or about 0.1 pixels per second on a 1920px screen.
+ */
+const STATIONARY_VELOCITY_THRESHOLD = 0.00005
+
+/**
  * Calculate the Euclidean distance between two points
  */
 function distance(p1: { x: number; y: number }, p2: { x: number; y: number }): number {
@@ -211,7 +218,7 @@ export function shouldAutoGenerateZooms(cursorData: RecordingCursorData): boolea
     totalMovement += dist
     
     // Count as stationary if movement is less than threshold
-    if (dist / timeDiff < 0.00005) { // Very slow movement
+    if (dist / timeDiff < STATIONARY_VELOCITY_THRESHOLD) {
       stationaryTime += timeDiff
     }
   }

@@ -8,6 +8,12 @@ export interface CursorDataPoint {
   y: number; // normalized 0-1
 }
 
+/**
+ * Default cursor tracking interval in ms (50ms = 20fps).
+ * This provides a good balance between tracking accuracy and performance.
+ */
+const DEFAULT_CURSOR_TRACKING_INTERVAL = 50;
+
 type UseScreenRecorderReturn = {
   recording: boolean;
   toggleRecording: () => void;
@@ -16,7 +22,15 @@ type UseScreenRecorderReturn = {
   cursorData: CursorDataPoint[];
 };
 
-export function useScreenRecorder(): UseScreenRecorderReturn {
+interface UseScreenRecorderOptions {
+  cursorTrackingIntervalMs?: number;
+}
+
+export function useScreenRecorder(
+  options: UseScreenRecorderOptions = {}
+): UseScreenRecorderReturn {
+  const { cursorTrackingIntervalMs = DEFAULT_CURSOR_TRACKING_INTERVAL } = options;
+  
   const [recording, setRecording] = useState(false);
   const [zoomFollowEnabled, setZoomFollowEnabled] = useState(false);
   const mediaRecorder = useRef<MediaRecorder | null>(null);
@@ -53,8 +67,8 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
       } catch (error) {
         // Silently fail - cursor tracking is optional
       }
-    }, 50); // Track cursor at 20fps
-  }, []);
+    }, cursorTrackingIntervalMs);
+  }, [cursorTrackingIntervalMs]);
 
   // Stop cursor tracking
   const stopCursorTracking = useCallback(() => {
