@@ -1,8 +1,23 @@
-import { ipcMain, desktopCapturer, BrowserWindow, shell, app } from 'electron'
+import { ipcMain, desktopCapturer, BrowserWindow, shell, app, screen } from 'electron'
 
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { RECORDINGS_DIR } from '../main'
+
+// Zoom follow cursor state management
+interface ZoomFollowState {
+  enabled: boolean
+  zoomLevel: number
+  followSpeed: number
+  smoothing: number
+}
+
+let zoomFollowState: ZoomFollowState = {
+  enabled: false,
+  zoomLevel: 2.0,
+  followSpeed: 0.15,
+  smoothing: 0.1
+}
 
 interface SelectedSource {
   id: string
@@ -104,6 +119,30 @@ export function registerIpcHandlers(
     }
   })
 
+  // Get cursor data for a recording (if available)
+  ipcMain.handle('get-cursor-data', async () => {
+    try {
+      const files = await fs.readdir(RECORDINGS_DIR)
+      const cursorFiles = files.filter(file => file.endsWith('-cursor.json'))
+      
+      if (cursorFiles.length === 0) {
+        return { success: true, data: null, message: 'No cursor data found' }
+      }
+      
+      // Get the latest cursor data file
+      const latestCursorFile = cursorFiles.sort().reverse()[0]
+      const cursorPath = path.join(RECORDINGS_DIR, latestCursorFile)
+      
+      const cursorDataRaw = await fs.readFile(cursorPath, 'utf-8')
+      const cursorData = JSON.parse(cursorDataRaw)
+      
+      return { success: true, data: cursorData }
+    } catch (error) {
+      console.error('Failed to get cursor data:', error)
+      return { success: false, data: null, message: 'Failed to get cursor data', error: String(error) }
+    }
+  })
+
   ipcMain.handle('set-recording-state', (_, recording: boolean) => {
     const source = selectedSource || { name: 'Screen' }
     if (onRecordingStateChange) {
@@ -184,5 +223,80 @@ export function registerIpcHandlers(
   // Get current platform
   ipcMain.handle('get-platform', () => {
     return process.platform
+  })
+
+  // Zoom follow cursor handlers
+  ipcMain.handle('get-cursor-position', () => {
+    const point = screen.getCursorScreenPoint()
+    const primaryDisplay = screen.getPrimaryDisplay()
+    const displays = screen.getAllDisplays()
+    
+    // Find which display the cursor is on
+    let currentDisplay = primaryDisplay
+    for (const display of displays) {
+      const bounds = display.bounds
+      if (
+        point.x >= bounds.x &&
+        point.x < bounds.x + bounds.width &&
+        point.y >= bounds.y &&
+        point.y < bounds.y + bounds.height
+      ) {
+        currentDisplay = display
+        break
+      }
+    }
+    
+    // Calculate position relative to the current display
+    const relativeX = point.x - currentDisplay.bounds.x
+    const relativeY = point.y - currentDisplay.bounds.y
+    
+    // Normalize to 0-1 range
+    const normalizedX = relativeX / currentDisplay.bounds.width
+    const normalizedY = relativeY / currentDisplay.bounds.height
+    
+    return {
+      x: point.x,
+      y: point.y,
+      relativeX,
+      relativeY,
+      normalizedX,
+      normalizedY,
+      displayWidth: currentDisplay.bounds.width,
+      displayHeight: currentDisplay.bounds.height,
+      displayId: currentDisplay.id
+    }
+  })
+
+  ipcMain.handle('set-zoom-follow-state', (_, state: Partial<ZoomFollowState>) => {
+    zoomFollowState = { ...zoomFollowState, ...state }
+    return zoomFollowState
+  })
+
+  ipcMain.handle('get-zoom-follow-state', () => {
+    return zoomFollowState
+  })
+
+  ipcMain.handle('get-display-info', () => {
+    const primaryDisplay = screen.getPrimaryDisplay()
+    const allDisplays = screen.getAllDisplays()
+    
+    return {
+      primary: {
+        id: primaryDisplay.id,
+        width: primaryDisplay.bounds.width,
+        height: primaryDisplay.bounds.height,
+        x: primaryDisplay.bounds.x,
+        y: primaryDisplay.bounds.y,
+        scaleFactor: primaryDisplay.scaleFactor
+      },
+      all: allDisplays.map(d => ({
+        id: d.id,
+        width: d.bounds.width,
+        height: d.bounds.height,
+        x: d.bounds.x,
+        y: d.bounds.y,
+        scaleFactor: d.scaleFactor
+      }))
+    }
   })
 }

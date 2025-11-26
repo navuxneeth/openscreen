@@ -22,6 +22,11 @@ import {
   type CropRegion,
 } from "./types";
 import { VideoExporter, type ExportProgress } from "@/lib/exporter";
+import { 
+  generateZoomRegionsFromCursorData, 
+  shouldAutoGenerateZooms,
+  type RecordingCursorData 
+} from "@/lib/cursorZoomGenerator";
 
 const WALLPAPER_COUNT = 23;
 const WALLPAPER_PATHS = Array.from({ length: WALLPAPER_COUNT }, (_, i) => `/wallpapers/wallpaper${i + 1}.jpg`);
@@ -43,6 +48,8 @@ export default function VideoEditor() {
   const [exportProgress, setExportProgress] = useState<ExportProgress | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
   const [showExportDialog, setShowExportDialog] = useState(false);
+  const [cursorData, setCursorData] = useState<RecordingCursorData | null>(null);
+  const [hasAutoZoomSuggestion, setHasAutoZoomSuggestion] = useState(false);
 
   const videoPlaybackRef = useRef<VideoPlaybackRef>(null);
   const nextZoomIdRef = useRef(1);
@@ -75,6 +82,22 @@ export default function VideoEditor() {
         } else {
           setError(result.message || 'Failed to load video');
         }
+
+        // Also load cursor data if available
+        try {
+          const cursorResult = await window.electronAPI.getCursorData();
+          if (cursorResult.success && cursorResult.data) {
+            setCursorData(cursorResult.data);
+            // Check if auto-zoom generation would be beneficial
+            if (shouldAutoGenerateZooms(cursorResult.data)) {
+              setHasAutoZoomSuggestion(true);
+              toast.info('Cursor data detected! Click "Auto Zoom" to generate zoom regions from cursor movements.');
+            }
+          }
+        } catch (cursorErr) {
+          // Cursor data is optional, don't show error
+          console.log('No cursor data available:', cursorErr);
+        }
       } catch (err) {
         setError('Error loading video: ' + String(err));
       } finally {
@@ -83,6 +106,32 @@ export default function VideoEditor() {
     }
     loadVideo();
   }, []);
+
+  // Auto-generate zoom regions from cursor data
+  const handleAutoGenerateZooms = useCallback(() => {
+    if (!cursorData) {
+      toast.error('No cursor data available');
+      return;
+    }
+
+    const newZoomRegions = generateZoomRegionsFromCursorData(cursorData);
+    
+    if (newZoomRegions.length === 0) {
+      toast.info('No suitable zoom regions detected from cursor data');
+      return;
+    }
+
+    // Update the ID counter to avoid conflicts
+    const maxId = Math.max(...newZoomRegions.map(r => {
+      const match = r.id.match(/auto-zoom-(\d+)/);
+      return match ? parseInt(match[1], 10) : 0;
+    }));
+    nextZoomIdRef.current = maxId + 1;
+
+    setZoomRegions(prev => [...prev, ...newZoomRegions]);
+    setHasAutoZoomSuggestion(false);
+    toast.success(`Generated ${newZoomRegions.length} zoom regions from cursor movements`);
+  }, [cursorData]);
 
   function togglePlayPause() {
     const playback = videoPlaybackRef.current;
@@ -390,6 +439,8 @@ export default function VideoEditor() {
           onCropChange={setCropRegion}
           videoElement={videoPlaybackRef.current?.video || null}
           onExport={handleExport}
+          hasAutoZoomSuggestion={hasAutoZoomSuggestion}
+          onAutoGenerateZooms={handleAutoGenerateZooms}
         />
       </div>
 

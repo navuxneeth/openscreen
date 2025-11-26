@@ -21,6 +21,49 @@ declare namespace NodeJS {
   }
 }
 
+// Zoom follow cursor types
+interface CursorPosition {
+  x: number
+  y: number
+  relativeX: number
+  relativeY: number
+  normalizedX: number
+  normalizedY: number
+  displayWidth: number
+  displayHeight: number
+  displayId: number
+}
+
+interface ZoomFollowState {
+  enabled: boolean
+  zoomLevel: number
+  followSpeed: number
+  smoothing: number
+}
+
+interface DisplayInfo {
+  id: number
+  width: number
+  height: number
+  x: number
+  y: number
+  scaleFactor: number
+}
+
+// Cursor data stored during recording
+interface CursorDataPoint {
+  timestamp: number
+  x: number
+  y: number
+}
+
+interface RecordingCursorData {
+  version: number
+  duration: number
+  zoomFollowEnabled: boolean
+  dataPoints: CursorDataPoint[]
+}
+
 // Used in Renderer process, expose in `preload.ts`
 interface Window {
   electronAPI: {
@@ -32,6 +75,7 @@ interface Window {
     storeRecordedVideo: (videoData: ArrayBuffer, fileName: string) => Promise<{ success: boolean; path?: string; message?: string }>
 
     getRecordedVideoPath: () => Promise<{ success: boolean; path?: string; message?: string }>
+    getCursorData: () => Promise<{ success: boolean; data: RecordingCursorData | null; message?: string }>
     setRecordingState: (recording: boolean) => Promise<void>
     onStopRecordingFromTray: (callback: () => void) => () => void
     openExternalUrl: (url: string) => Promise<{ success: boolean; error?: string }>
@@ -42,6 +86,11 @@ interface Window {
     maximizeWindow: () => Promise<void>
     closeWindow: () => Promise<void>
     getPlatform: () => Promise<string>
+    // Zoom follow cursor methods
+    getCursorPosition: () => Promise<CursorPosition>
+    setZoomFollowState: (state: Partial<ZoomFollowState>) => Promise<ZoomFollowState>
+    getZoomFollowState: () => Promise<ZoomFollowState>
+    getDisplayInfo: () => Promise<{ primary: DisplayInfo; all: DisplayInfo[] }>
   }
 }
 
