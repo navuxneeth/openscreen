@@ -1,5 +1,34 @@
 import { contextBridge, ipcRenderer } from 'electron'
 
+// Type definitions for zoom follow cursor
+interface CursorPosition {
+  x: number
+  y: number
+  relativeX: number
+  relativeY: number
+  normalizedX: number
+  normalizedY: number
+  displayWidth: number
+  displayHeight: number
+  displayId: number
+}
+
+interface ZoomFollowState {
+  enabled: boolean
+  zoomLevel: number
+  followSpeed: number
+  smoothing: number
+}
+
+interface DisplayInfo {
+  id: number
+  width: number
+  height: number
+  x: number
+  y: number
+  scaleFactor: number
+}
+
 contextBridge.exposeInMainWorld('electronAPI', {
   getAssetBasePath: async () => {
     // ask main process for the correct base path (production vs dev)
@@ -55,4 +84,18 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getPlatform: () => {
     return ipcRenderer.invoke('get-platform')
   },
+
+  // Zoom follow cursor APIs
+  getCursorPosition: (): Promise<CursorPosition> => {
+    return ipcRenderer.invoke('get-cursor-position')
+  },
+  setZoomFollowState: (state: Partial<ZoomFollowState>): Promise<ZoomFollowState> => {
+    return ipcRenderer.invoke('set-zoom-follow-state', state)
+  },
+  getZoomFollowState: (): Promise<ZoomFollowState> => {
+    return ipcRenderer.invoke('get-zoom-follow-state')
+  },
+  getDisplayInfo: (): Promise<{ primary: DisplayInfo; all: DisplayInfo[] }> => {
+    return ipcRenderer.invoke('get-display-info')
+  }
 })

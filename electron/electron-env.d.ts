@@ -21,6 +21,35 @@ declare namespace NodeJS {
   }
 }
 
+// Zoom follow cursor types
+interface CursorPosition {
+  x: number
+  y: number
+  relativeX: number
+  relativeY: number
+  normalizedX: number
+  normalizedY: number
+  displayWidth: number
+  displayHeight: number
+  displayId: number
+}
+
+interface ZoomFollowState {
+  enabled: boolean
+  zoomLevel: number
+  followSpeed: number
+  smoothing: number
+}
+
+interface DisplayInfo {
+  id: number
+  width: number
+  height: number
+  x: number
+  y: number
+  scaleFactor: number
+}
+
 // Used in Renderer process, expose in `preload.ts`
 interface Window {
   electronAPI: {
@@ -42,6 +71,11 @@ interface Window {
     maximizeWindow: () => Promise<void>
     closeWindow: () => Promise<void>
     getPlatform: () => Promise<string>
+    // Zoom follow cursor methods
+    getCursorPosition: () => Promise<CursorPosition>
+    setZoomFollowState: (state: Partial<ZoomFollowState>) => Promise<ZoomFollowState>
+    getZoomFollowState: () => Promise<ZoomFollowState>
+    getDisplayInfo: () => Promise<{ primary: DisplayInfo; all: DisplayInfo[] }>
   }
 }
 

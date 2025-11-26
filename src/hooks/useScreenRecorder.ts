@@ -1,17 +1,68 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { fixWebmDuration } from "@fix-webm-duration/fix";
+
+// Cursor tracking data structure
+export interface CursorDataPoint {
+  timestamp: number; // ms from start of recording
+  x: number; // normalized 0-1
+  y: number; // normalized 0-1
+}
 
 type UseScreenRecorderReturn = {
   recording: boolean;
   toggleRecording: () => void;
+  zoomFollowEnabled: boolean;
+  toggleZoomFollow: () => void;
+  cursorData: CursorDataPoint[];
 };
 
 export function useScreenRecorder(): UseScreenRecorderReturn {
   const [recording, setRecording] = useState(false);
+  const [zoomFollowEnabled, setZoomFollowEnabled] = useState(false);
   const mediaRecorder = useRef<MediaRecorder | null>(null);
   const stream = useRef<MediaStream | null>(null);
   const chunks = useRef<Blob[]>([]);
   const startTime = useRef<number>(0);
+  const cursorData = useRef<CursorDataPoint[]>([]);
+  const cursorTrackingInterval = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Toggle zoom follow mode
+  const toggleZoomFollow = useCallback(() => {
+    setZoomFollowEnabled(prev => !prev);
+  }, []);
+
+  // Start cursor tracking
+  const startCursorTracking = useCallback(() => {
+    if (cursorTrackingInterval.current) return;
+
+    cursorData.current = [];
+    const recordingStartTime = startTime.current;
+
+    cursorTrackingInterval.current = setInterval(async () => {
+      if (!window.electronAPI?.getCursorPosition) return;
+      
+      try {
+        const pos = await window.electronAPI.getCursorPosition();
+        const timestamp = Date.now() - recordingStartTime;
+        
+        cursorData.current.push({
+          timestamp,
+          x: pos.normalizedX,
+          y: pos.normalizedY
+        });
+      } catch (error) {
+        // Silently fail - cursor tracking is optional
+      }
+    }, 50); // Track cursor at 20fps
+  }, []);
+
+  // Stop cursor tracking
+  const stopCursorTracking = useCallback(() => {
+    if (cursorTrackingInterval.current) {
+      clearInterval(cursorTrackingInterval.current);
+      cursorTrackingInterval.current = null;
+    }
+  }, []);
 
   const stopRecording = useRef(() => {
     if (mediaRecorder.current?.state === "recording") {
@@ -20,6 +71,7 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
       }
       mediaRecorder.current.stop();
       setRecording(false);
+      stopCursorTracking();
 
       window.electronAPI?.setRecordingState(false);
     }
@@ -102,6 +154,8 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
       };
       recorder.onstop = async () => {
         stream.current = null;
+        stopCursorTracking();
+        
         if (chunks.current.length === 0) return;
         const duration = Date.now() - startTime.current;
         const buggyBlob = new Blob(chunks.current, { type: mimeType });
@@ -109,6 +163,7 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
         chunks.current = [];
         const timestamp = Date.now();
         const videoFileName = `recording-${timestamp}.webm`;
+        const cursorFileName = `recording-${timestamp}-cursor.json`;
 
         try {
           const videoBlob = await fixWebmDuration(buggyBlob, duration);
@@ -119,20 +174,42 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
             return;
           }
 
+          // Store cursor data if zoom follow was enabled
+          if (zoomFollowEnabled && cursorData.current.length > 0) {
+            const cursorDataJson = JSON.stringify({
+              version: 1,
+              duration,
+              zoomFollowEnabled: true,
+              dataPoints: cursorData.current
+            });
+            const cursorDataBlob = new Blob([cursorDataJson], { type: 'application/json' });
+            const cursorArrayBuffer = await cursorDataBlob.arrayBuffer();
+            await window.electronAPI.storeRecordedVideo(cursorArrayBuffer, cursorFileName);
+          }
+
           await window.electronAPI.switchToEditor();
         } catch (error) {
           console.error('Error saving recording:', error);
         }
       };
-      recorder.onerror = () => setRecording(false);
+      recorder.onerror = () => {
+        setRecording(false);
+        stopCursorTracking();
+      };
       // Use larger timeslice to reduce recording overhead and improve smoothness
       recorder.start(5000);
       startTime.current = Date.now();
       setRecording(true);
       window.electronAPI?.setRecordingState(true);
+
+      // Start cursor tracking if zoom follow is enabled
+      if (zoomFollowEnabled) {
+        startCursorTracking();
+      }
     } catch (error) {
       console.error('Failed to start recording:', error);
       setRecording(false);
+      stopCursorTracking();
       if (stream.current) {
         stream.current.getTracks().forEach(track => track.stop());
         stream.current = null;
@@ -144,5 +221,11 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
     recording ? stopRecording.current() : startRecording();
   };
 
-  return { recording, toggleRecording };
+  return { 
+    recording, 
+    toggleRecording, 
+    zoomFollowEnabled, 
+    toggleZoomFollow,
+    cursorData: cursorData.current
+  };
 }

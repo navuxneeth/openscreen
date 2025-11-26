@@ -5,9 +5,10 @@ import { Button } from "../ui/button";
 import { BsRecordCircle } from "react-icons/bs";
 import { FaRegStopCircle } from "react-icons/fa";
 import { MdMonitor } from "react-icons/md";
+import { TbZoomInFilled, TbZoomIn } from "react-icons/tb";
 
 export function LaunchWindow() {
-  const { recording, toggleRecording } = useScreenRecorder();
+  const { recording, toggleRecording, zoomFollowEnabled, toggleZoomFollow } = useScreenRecorder();
   const [selectedSource, setSelectedSource] = useState("Screen");
   const [hasSelectedSource, setHasSelectedSource] = useState(false);
 
@@ -64,6 +65,24 @@ export function LaunchWindow() {
         >
           <MdMonitor size={13} className="text-white" />
           {truncateText(selectedSource)}
+        </Button>
+
+        <div className="w-px h-5 bg-white/30" />
+
+        {/* Zoom Follow Cursor Toggle */}
+        <Button
+          variant="link"
+          size="sm"
+          onClick={toggleZoomFollow}
+          disabled={recording}
+          title={zoomFollowEnabled ? "Zoom Follow: ON - Cursor will be tracked during recording" : "Zoom Follow: OFF - Click to enable cursor tracking"}
+          className={`gap-1 bg-transparent hover:bg-transparent px-2 text-xs ${styles.electronNoDrag}`}
+        >
+          {zoomFollowEnabled ? (
+            <TbZoomInFilled size={14} className="text-[#34B27B]" />
+          ) : (
+            <TbZoomIn size={14} className={recording ? "text-white/30" : "text-white/70"} />
+          )}
         </Button>
 
         <div className="w-px h-5 bg-white/30" />
