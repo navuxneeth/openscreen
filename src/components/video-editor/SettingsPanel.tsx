@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import Colorful from '@uiw/react-color-colorful';
 import { hsvaToHex } from '@uiw/color-convert';
-import { Trash2, Download, Crop, X, Bug, Upload, Coffee } from "lucide-react";
+import { Trash2, Download, Crop, X, Bug, Upload, Coffee, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 import type { ZoomDepth, CropRegion } from "./types";
 import { CropControl } from "./CropControl";
@@ -56,6 +56,8 @@ interface SettingsPanelProps {
   onCropChange?: (region: CropRegion) => void;
   videoElement?: HTMLVideoElement | null;
   onExport?: () => void;
+  hasAutoZoomSuggestion?: boolean;
+  onAutoGenerateZooms?: () => void;
 }
 
 export default SettingsPanel;
@@ -68,7 +70,7 @@ const ZOOM_DEPTH_OPTIONS: Array<{ depth: ZoomDepth; label: string }> = [
   { depth: 5, label: "3.5×" },
 ];
 
-export function SettingsPanel({ selected, onWallpaperChange, selectedZoomDepth, onZoomDepthChange, selectedZoomId, onZoomDelete, showShadow, onShadowChange, showBlur, onBlurChange, cropRegion, onCropChange, videoElement, onExport }: SettingsPanelProps) {
+export function SettingsPanel({ selected, onWallpaperChange, selectedZoomDepth, onZoomDepthChange, selectedZoomId, onZoomDelete, showShadow, onShadowChange, showBlur, onBlurChange, cropRegion, onCropChange, videoElement, onExport, hasAutoZoomSuggestion, onAutoGenerateZooms }: SettingsPanelProps) {
   const [wallpaperPaths, setWallpaperPaths] = useState<string[]>([]);
   const [customImages, setCustomImages] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -190,6 +192,16 @@ export function SettingsPanel({ selected, onWallpaperChange, selectedZoomDepth, 
           >
             <Trash2 className="w-4 h-4" />
             Delete Zoom Region
+          </Button>
+        )}
+        {hasAutoZoomSuggestion && onAutoGenerateZooms && (
+          <Button
+            onClick={onAutoGenerateZooms}
+            size="sm"
+            className="mt-4 w-full gap-2 bg-[#34B27B]/10 text-[#34B27B] border border-[#34B27B]/20 hover:bg-[#34B27B]/20 hover:border-[#34B27B]/30 transition-all"
+          >
+            <Wand2 className="w-4 h-4" />
+            Auto Generate Zooms from Cursor
           </Button>
         )}
       </div>

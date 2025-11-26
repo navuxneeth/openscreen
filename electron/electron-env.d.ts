@@ -50,6 +50,20 @@ interface DisplayInfo {
   scaleFactor: number
 }
 
+// Cursor data stored during recording
+interface CursorDataPoint {
+  timestamp: number
+  x: number
+  y: number
+}
+
+interface RecordingCursorData {
+  version: number
+  duration: number
+  zoomFollowEnabled: boolean
+  dataPoints: CursorDataPoint[]
+}
+
 // Used in Renderer process, expose in `preload.ts`
 interface Window {
   electronAPI: {
@@ -61,6 +75,7 @@ interface Window {
     storeRecordedVideo: (videoData: ArrayBuffer, fileName: string) => Promise<{ success: boolean; path?: string; message?: string }>
 
     getRecordedVideoPath: () => Promise<{ success: boolean; path?: string; message?: string }>
+    getCursorData: () => Promise<{ success: boolean; data: RecordingCursorData | null; message?: string }>
     setRecordingState: (recording: boolean) => Promise<void>
     onStopRecordingFromTray: (callback: () => void) => () => void
     openExternalUrl: (url: string) => Promise<{ success: boolean; error?: string }>

@@ -119,6 +119,30 @@ export function registerIpcHandlers(
     }
   })
 
+  // Get cursor data for a recording (if available)
+  ipcMain.handle('get-cursor-data', async () => {
+    try {
+      const files = await fs.readdir(RECORDINGS_DIR)
+      const cursorFiles = files.filter(file => file.endsWith('-cursor.json'))
+      
+      if (cursorFiles.length === 0) {
+        return { success: true, data: null, message: 'No cursor data found' }
+      }
+      
+      // Get the latest cursor data file
+      const latestCursorFile = cursorFiles.sort().reverse()[0]
+      const cursorPath = path.join(RECORDINGS_DIR, latestCursorFile)
+      
+      const cursorDataRaw = await fs.readFile(cursorPath, 'utf-8')
+      const cursorData = JSON.parse(cursorDataRaw)
+      
+      return { success: true, data: cursorData }
+    } catch (error) {
+      console.error('Failed to get cursor data:', error)
+      return { success: false, data: null, message: 'Failed to get cursor data', error: String(error) }
+    }
+  })
+
   ipcMain.handle('set-recording-state', (_, recording: boolean) => {
     const source = selectedSource || { name: 'Screen' }
     if (onRecordingStateChange) {
