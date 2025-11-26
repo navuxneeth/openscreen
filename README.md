@@ -72,6 +72,16 @@ npm run build:win
 npm run build:mac
 ```
 
+### 📦 Customizing the Installer
+
+Want to customize the Windows installer with features like custom cursors, icons, or install options?
+
+See the [Windows Installer Customization Guide](./docs/WINDOWS_INSTALLER_CUSTOMIZATION.md) for detailed instructions on:
+- Adding custom cursors and resources
+- Modifying NSIS installer scripts
+- Customizing installer graphics and behavior
+- Advanced configuration options
+
 ---
 
 ## 📄 License
