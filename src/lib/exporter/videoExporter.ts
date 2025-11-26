@@ -188,7 +188,7 @@ export class VideoExporter {
         // Capture decoder config metadata from encoder output
         if (meta?.decoderConfig?.description && !videoDescription) {
           const desc = meta.decoderConfig.description;
-          videoDescription = new Uint8Array(desc instanceof ArrayBuffer ? desc : (desc as any));
+          videoDescription = new Uint8Array(desc instanceof ArrayBuffer ? desc : (desc as ArrayBufferLike));
           this.videoDescription = videoDescription;
         }
         // Capture colorSpace from encoder metadata if provided
@@ -240,37 +240,63 @@ export class VideoExporter {
       },
     });
 
-    const codec = this.config.codec || 'avc1.640033';
+    // Try multiple codecs for better cross-platform compatibility
+    const codecsToTry = [
+      this.config.codec || 'avc1.640033', // H.264 High Profile Level 5.1
+      'avc1.42001f', // H.264 Baseline Profile Level 3.1 (more widely supported)
+      'avc1.4d401f', // H.264 Main Profile Level 3.1
+    ];
     
-    const encoderConfig: VideoEncoderConfig = {
-      codec,
-      width: this.config.width,
-      height: this.config.height,
-      bitrate: this.config.bitrate,
-      framerate: this.config.frameRate,
-      latencyMode: 'realtime',
-      bitrateMode: 'variable',
-      hardwareAcceleration: 'prefer-hardware',
-    };
+    let configuredSuccessfully = false;
+    
+    for (const codec of codecsToTry) {
+      if (configuredSuccessfully) break;
+      
+      const encoderConfig: VideoEncoderConfig = {
+        codec,
+        width: this.config.width,
+        height: this.config.height,
+        bitrate: this.config.bitrate,
+        framerate: this.config.frameRate,
+        latencyMode: 'realtime',
+        bitrateMode: 'variable',
+        hardwareAcceleration: 'prefer-hardware',
+      };
 
-    // Check hardware support first
-    const hardwareSupport = await VideoEncoder.isConfigSupported(encoderConfig);
-    
-    if (hardwareSupport.supported) {
-      // Use hardware encoding
-      console.log('[VideoExporter] Using hardware acceleration');
-      this.encoder.configure(encoderConfig);
-    } else {
-      // Fall back to software encoding
-      console.log('[VideoExporter] Hardware not supported, using software encoding');
-      encoderConfig.hardwareAcceleration = 'prefer-software';
+      // Check hardware support first
+      const hardwareSupport = await VideoEncoder.isConfigSupported(encoderConfig);
       
-      const softwareSupport = await VideoEncoder.isConfigSupported(encoderConfig);
-      if (!softwareSupport.supported) {
-        throw new Error('Video encoding not supported on this system');
+      if (hardwareSupport.supported) {
+        // Use hardware encoding
+        console.log(`[VideoExporter] Using hardware acceleration with codec: ${codec}`);
+        try {
+          this.encoder.configure(encoderConfig);
+          this.config.codec = codec; // Update the config with the working codec
+          configuredSuccessfully = true;
+        } catch (e) {
+          console.warn(`[VideoExporter] Failed to configure hardware encoder with ${codec}:`, e);
+        }
+      } else {
+        // Fall back to software encoding
+        console.log(`[VideoExporter] Hardware not supported for ${codec}, trying software encoding`);
+        encoderConfig.hardwareAcceleration = 'prefer-software';
+        
+        const softwareSupport = await VideoEncoder.isConfigSupported(encoderConfig);
+        if (softwareSupport.supported) {
+          try {
+            this.encoder.configure(encoderConfig);
+            this.config.codec = codec; // Update the config with the working codec
+            configuredSuccessfully = true;
+            console.log(`[VideoExporter] Using software encoding with codec: ${codec}`);
+          } catch (e) {
+            console.warn(`[VideoExporter] Failed to configure software encoder with ${codec}:`, e);
+          }
+        }
       }
-      
-      this.encoder.configure(encoderConfig);
+    }
+    
+    if (!configuredSuccessfully) {
+      throw new Error('Video encoding not supported on this system. None of the available codecs are supported.');
     }
   }
 

@@ -111,9 +111,11 @@ function createSourceSelectorWindowWrapper() {
 }
 
 // On macOS, applications and their menu bar stay active until the user quits
-// explicitly with Cmd + Q.
+// explicitly with Cmd + Q. On Windows/Linux, quit when all windows are closed.
 app.on('window-all-closed', () => {
-  // Keep app running (macOS behavior)
+  if (process.platform !== 'darwin') {
+    app.quit()
+  }
 })
 
 app.on('activate', () => {
