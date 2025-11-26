@@ -14,7 +14,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   openSourceSelector: () => {
     return ipcRenderer.invoke('open-source-selector')
   },
-  selectSource: (source: any) => {
+  selectSource: (source: unknown) => {
     return ipcRenderer.invoke('select-source', source)
   },
   getSelectedSource: () => {
@@ -41,5 +41,18 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   saveExportedVideo: (videoData: ArrayBuffer, fileName: string) => {
     return ipcRenderer.invoke('save-exported-video', videoData, fileName)
+  },
+  // Window control methods for Windows (frameless window)
+  minimizeWindow: () => {
+    return ipcRenderer.invoke('minimize-window')
+  },
+  maximizeWindow: () => {
+    return ipcRenderer.invoke('maximize-window')
+  },
+  closeWindow: () => {
+    return ipcRenderer.invoke('close-window')
+  },
+  getPlatform: () => {
+    return ipcRenderer.invoke('get-platform')
   },
 })

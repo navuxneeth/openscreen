@@ -36,7 +36,19 @@ OpenScreen is 100% free for personal and commercial use. Use it, modify it, dist
 - Choose between wallpapers, solid colors, gradients or your own picture for your background
 - Motion blur and exponential easing for smoother pan and zoom effects
 
-## macOS Installation instructions
+## Installation
+
+Download the latest installer for your platform from the [GitHub Releases](https://github.com/siddharthvaddem/openscreen/releases) page.
+
+### Windows Installation
+
+1. Download the Windows installer (`Openscreen-Windows-x64-{version}-Setup.exe`) from the [Releases](https://github.com/siddharthvaddem/openscreen/releases) page.
+2. Run the installer and follow the installation wizard.
+3. Launch OpenScreen from the Start Menu or Desktop shortcut.
+
+**Note:** Windows SmartScreen may show a warning since the app is not signed with a code signing certificate. Click "More info" and then "Run anyway" to proceed with the installation.
+
+### macOS Installation
 
 Download the latest installer for your platform from the [GitHub Releases](https://github.com/siddharthvaddem/openscreen/releases) page.
 

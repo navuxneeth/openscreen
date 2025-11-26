@@ -4,7 +4,15 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import { RECORDINGS_DIR } from '../main'
 
-let selectedSource: any = null
+interface SelectedSource {
+  id: string
+  name: string
+  display_id?: string
+  thumbnail?: string | null
+  appIcon?: string | null
+}
+
+let selectedSource: SelectedSource | null = null
 
 export function registerIpcHandlers(
   createEditorWindow: () => void,
@@ -24,7 +32,7 @@ export function registerIpcHandlers(
     }))
   })
 
-  ipcMain.handle('select-source', (_, source) => {
+  ipcMain.handle('select-source', (_, source: SelectedSource) => {
     selectedSource = source
     const sourceSelectorWin = getSourceSelectorWindow()
     if (sourceSelectorWin) {
@@ -145,5 +153,36 @@ export function registerIpcHandlers(
         error: String(error)
       }
     }
+  })
+
+  // Window control handlers for Windows frameless window
+  ipcMain.handle('minimize-window', (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender)
+    if (win) {
+      win.minimize()
+    }
+  })
+
+  ipcMain.handle('maximize-window', (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender)
+    if (win) {
+      if (win.isMaximized()) {
+        win.unmaximize()
+      } else {
+        win.maximize()
+      }
+    }
+  })
+
+  ipcMain.handle('close-window', (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender)
+    if (win) {
+      win.close()
+    }
+  })
+
+  // Get current platform
+  ipcMain.handle('get-platform', () => {
+    return process.platform
   })
 }

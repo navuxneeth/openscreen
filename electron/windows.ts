@@ -8,6 +8,9 @@ const APP_ROOT = path.join(__dirname, '..')
 const VITE_DEV_SERVER_URL = process.env['VITE_DEV_SERVER_URL']
 const RENDERER_DIST = path.join(APP_ROOT, 'dist')
 
+const isMac = process.platform === 'darwin'
+const isWindows = process.platform === 'win32'
+
 export function createHudOverlayWindow(): BrowserWindow {
   const win = new BrowserWindow({
     width: 250,
@@ -22,6 +25,10 @@ export function createHudOverlayWindow(): BrowserWindow {
     alwaysOnTop: true,
     skipTaskbar: true,
     hasShadow: false,
+    // Windows requires specific handling for transparent windows
+    ...(isWindows && { 
+      backgroundMaterial: 'none' as const
+    }),
     webPreferences: {
       preload: path.join(__dirname, 'preload.mjs'),
       nodeIntegration: false,
@@ -47,13 +54,11 @@ export function createHudOverlayWindow(): BrowserWindow {
 }
 
 export function createEditorWindow(): BrowserWindow {
-  const win = new BrowserWindow({
+  const windowOptions: Electron.BrowserWindowConstructorOptions = {
     width: 1200,
     height: 800,
     minWidth: 800,
     minHeight: 600,
-    titleBarStyle: 'hiddenInset',
-    trafficLightPosition: { x: 12, y: 12 },
     transparent: false,
     resizable: true,
     alwaysOnTop: false,
@@ -67,7 +72,19 @@ export function createEditorWindow(): BrowserWindow {
       webSecurity: false,
       backgroundThrottling: false,
     },
-  })
+  }
+
+  // Platform-specific title bar configuration
+  if (isMac) {
+    windowOptions.titleBarStyle = 'hiddenInset'
+    windowOptions.trafficLightPosition = { x: 12, y: 12 }
+  } else if (isWindows) {
+    // Use custom title bar on Windows for consistency with macOS look
+    windowOptions.frame = false
+    windowOptions.titleBarStyle = 'hidden'
+  }
+
+  const win = new BrowserWindow(windowOptions)
 
   // Maximize the window by default
   win.maximize();
@@ -90,7 +107,7 @@ export function createEditorWindow(): BrowserWindow {
 export function createSourceSelectorWindow(): BrowserWindow {
   const { width, height } = screen.getPrimaryDisplay().workAreaSize
   
-  const win = new BrowserWindow({
+  const windowOptions: Electron.BrowserWindowConstructorOptions = {
     width: 620,
     height: 420,
     minHeight: 350,
@@ -107,7 +124,14 @@ export function createSourceSelectorWindow(): BrowserWindow {
       nodeIntegration: false,
       contextIsolation: true,
     },
-  })
+  }
+
+  // Windows requires additional handling for transparent frameless windows
+  if (isWindows) {
+    windowOptions.backgroundMaterial = 'none'
+  }
+
+  const win = new BrowserWindow(windowOptions)
 
   if (VITE_DEV_SERVER_URL) {
     win.loadURL(VITE_DEV_SERVER_URL + '?windowType=source-selector')

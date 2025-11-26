@@ -9,6 +9,7 @@ import PlaybackControls from "./PlaybackControls";
 import TimelineEditor from "./timeline/TimelineEditor";
 import { SettingsPanel } from "./SettingsPanel";
 import { ExportDialog } from "./ExportDialog";
+import { WindowControls } from "@/components/ui/window-controls";
 
 import type { Span } from "dnd-timeline";
 import {
@@ -299,6 +300,7 @@ export default function VideoEditor() {
   }
 
   const isMac = navigator.userAgent.includes('Mac');
+  const isWindows = navigator.userAgent.includes('Windows');
 
   return (
     <div className="flex flex-col h-screen bg-[#09090b] text-slate-200 overflow-hidden selection:bg-[#34B27B]/30">
@@ -308,7 +310,8 @@ export default function VideoEditor() {
         style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
       >
         <div className="flex-1" />
-
+        {/* Windows title bar controls */}
+        {isWindows && <WindowControls />}
       </div>
 
       <div className="flex-1 p-4 gap-4 flex min-h-0 relative">
