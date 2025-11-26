@@ -2,6 +2,93 @@
 	<img src="openscreen.png" alt="OpenScreen Logo" width="64" />
 </p>
 
+# <p align="center">OpenScreen</p>
+
+<p align="center"><strong>Free, open-source screen recording with beautiful zoom effects — your Screen Studio alternative!</strong></p>
+
+<p align="center">
+	<img src="preview.png" alt="OpenScreen App Preview" style="height: 320px; margin-right: 12px;" />
+</p>
+
+---
+
+## ⚡ Quick Install (Windows)
+
+**3 easy steps to get started:**
+
+1. **Download** → [Get the latest Windows installer](https://github.com/siddharthvaddem/openscreen/releases) (look for `Openscreen-Windows-x64-...-Setup.exe`)
+
+2. **Install** → Run the downloaded `.exe` file and follow the wizard
+
+3. **Launch** → Open OpenScreen from Start Menu or Desktop shortcut
+
+> 💡 **Tip:** If Windows SmartScreen shows a warning, click **"More info"** → **"Run anyway"** (the app is safe, just not code-signed yet)
+
+**That's it! You're ready to create beautiful screen recordings! 🎉**
+
+---
+
+## ✨ What You Can Do
+
+| Feature | Description |
+|---------|-------------|
+| 🖥️ **Screen Recording** | Record your whole screen or specific apps |
+| 🔍 **Smooth Zooms** | Add manual zooms with customizable depth levels |
+| ✂️ **Video Cropping** | Crop recordings to hide unwanted parts |
+| 🎨 **Custom Backgrounds** | Use wallpapers, solid colors, gradients, or your own images |
+| 🎬 **Pro Effects** | Motion blur and exponential easing for smooth animations |
+
+---
+
+## 🍎 macOS Users
+
+Download from [Releases](https://github.com/siddharthvaddem/openscreen/releases), then run in Terminal:
+
+```bash
+xattr -rd com.apple.quarantine /Applications/Openscreen.app
+```
+
+Then go to **System Preferences > Security & Privacy** and grant "screen recording" + "accessibility" permissions.
+
+---
+
+## 🛠️ For Developers
+
+Want to build from source or contribute? See the [Contribution Guide](./CONTRIBUTING.md).
+
+```bash
+# Clone and install
+git clone https://github.com/siddharthvaddem/openscreen.git
+cd openscreen
+npm install
+
+# Run in development mode
+npm run dev
+
+# Build for Windows
+npm run build:win
+
+# Build for macOS
+npm run build:mac
+```
+
+---
+
+## 📄 License
+
+[MIT License](./LICENSE) — 100% free for personal and commercial use!
+
+---
+
+<details>
+<summary><strong>📖 Original README (click to expand)</strong></summary>
+
+---
+
+<p align="center">
+	<img src="openscreen.png" alt="OpenScreen Logo" width="64" />
+</p>
+
 
 # <p align="center">OpenScreen</p>
 
@@ -77,3 +164,5 @@ _I'm new to open source, idk what I'm doing lol. If something is wrong please ra
 
 
 This project is licensed under the [MIT License](./LICENSE). By using this software, you agree that the authors are not liable for any issues, damages, or claims arising from its use.
+
+</details>
